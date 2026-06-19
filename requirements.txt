@@ -1,0 +1,5 @@
+gradio
+sounddevice
+soundfile
+numpy
+voxcpm
