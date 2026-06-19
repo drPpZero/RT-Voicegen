@@ -1,5 +1,7 @@
-gradio
+PyQt6
 sounddevice
 soundfile
 numpy
 voxcpm
+openai-whisper
+deep-translator
