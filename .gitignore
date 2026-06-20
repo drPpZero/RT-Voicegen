@@ -25,7 +25,10 @@ __pycache__/
 # 3. 프로그램 실행 중 생성되는 임시 오디오 및 데이터 (Temporary Media)
 # ==========================================
 # 프로그램이 마이크 입력을 받아 임시로 기록하는 파일들 제외
+# (사용자가 녹음한 클로닝 샘플, STT 임시 파일 등)
 temp_input.wav
+temp_stt_*.wav
+recorded_ref_voice.wav
 *.wav
 *.mp3
 *.flac

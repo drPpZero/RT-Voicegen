@@ -1,7 +1,19 @@
-PyQt6
-sounddevice
-soundfile
-numpy
+# ==========================================
+# VoxCPM2 Realtime Mic 의존성 (Dependencies)
+# ==========================================
+# GUI 프레임워크
+PyQt6>=6.6.0,<7.0.0
+
+# 오디오 처리
+sounddevice>=0.4.6,<0.5.0
+soundfile>=0.12.1,<0.13.0
+numpy>=1.24.0,<2.0.0
+
+# AI 모델 및 음성 처리
+faster-whisper>=1.0.0,<2.0.0
 voxcpm
-openai-whisper
-deep-translator
+
+# 번역
+deep-translator>=1.11.0,<2.0.0
+
+# 주의: torch, torchaudio는 GPU/CPU 선택에 따라 run.bat에서 별도 설치됨

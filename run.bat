@@ -5,54 +5,65 @@ echo =======================================
 echo VoxCPM2 Realtime Mic Setup ^& Run
 echo =======================================
 
-:: 가상환경이 이미 존재하면 복잡한 설치/탐색 건너뛰고 바로 실행
 IF EXIST "venv\Scripts\activate.bat" (
-    goto :RUN_APP
+    goto :CHECK_UPDATE
 )
 
 echo [1/4] 적합한 파이썬 버전을 찾는 중입니다...
 set PYTHON_CMD=
 
-:: 1. 기본 설정된 python 명령어가 3.12 이하인지 확인
 python -c "import sys; sys.exit(0 if sys.version_info <= (3, 12, 99) else 1)" >nul 2>nul
 if %errorlevel% equ 0 (
     set PYTHON_CMD=python
     goto :CREATE_VENV
 )
 
-:: 2. py 런처를 이용해 3.12부터 3.9까지 역순으로 탐색
 py -3.12 -c "exit()" >nul 2>nul
 if %errorlevel% equ 0 ( set PYTHON_CMD=py -3.12 & goto :CREATE_VENV )
 
 py -3.11 -c "exit()" >nul 2>nul
 if %errorlevel% equ 0 ( set PYTHON_CMD=py -3.11 & goto :CREATE_VENV )
 
-:: 3. py 런처가 고장났을 경우를 대비한 직접 경로 탐색 (3.12 및 3.11)
 echo [안내] py 런처에서 찾지 못해 기본 설치 경로를 직접 탐색합니다...
 set "PATH_LOCAL_312=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
 set "PATH_PROG_312=C:\Program Files\Python312\python.exe"
 set "PATH_LOCAL_311=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
 set "PATH_PROG_311=C:\Program Files\Python311\python.exe"
 
-if exist "%PATH_LOCAL_312%" ( set "PYTHON_CMD="%PATH_LOCAL_312%"" & goto :CREATE_VENV )
-if exist "%PATH_PROG_312%" ( set "PYTHON_CMD="%PATH_PROG_312%"" & goto :CREATE_VENV )
-if exist "%PATH_LOCAL_311%" ( set "PYTHON_CMD="%PATH_LOCAL_311%"" & goto :CREATE_VENV )
-if exist "%PATH_PROG_311%" ( set "PYTHON_CMD="%PATH_PROG_311%"" & goto :CREATE_VENV )
+if exist "%PATH_LOCAL_312%" ( set "PYTHON_CMD=%PATH_LOCAL_312%" & goto :CREATE_VENV )
+if exist "%PATH_PROG_312%" ( set "PYTHON_CMD=%PATH_PROG_312%" & goto :CREATE_VENV )
+if exist "%PATH_LOCAL_311%" ( set "PYTHON_CMD=%PATH_LOCAL_311%" & goto :CREATE_VENV )
+if exist "%PATH_PROG_311%" ( set "PYTHON_CMD=%PATH_PROG_311%" & goto :CREATE_VENV )
 
-:: 4. 모든 방법이 실패한 경우
 echo.
-echo [오류] 컴퓨터에서 Python 3.11 ~ 3.12 버전을 찾을 수 없습니다.
-echo 현재 설치된 버전이 너무 높거나(3.13 이상), 파이썬이 표준 경로에 설치되지 않았습니다.
-echo Python 3.12 공식 홈페이지 설치 파일을 다운로드하여 'Add to PATH' 체크 후 다시 설치해 주세요.
-pause
-exit /b
+echo [안내] 자동 탐색에서 Python 3.11 ~ 3.12을 찾지 못했습니다.
+echo 직접 파이썬 실행 파일 경로를 입력하거나 엔터로 종료할 수 있습니다.
+
+:MANUAL_PY_PROMPT
+set /p PY_MANUAL="파이썬 실행 파일 경로 입력 (예: C:\Python312\python.exe) 또는 빈칸 입력 후 엔터로 종료: "
+if "%PY_MANUAL%"=="" (
+    echo 종료합니다.
+    exit /b
+)
+if not exist "%PY_MANUAL%" (
+    echo [오류] 입력한 경로를 찾을 수 없습니다: %PY_MANUAL%
+    goto :MANUAL_PY_PROMPT
+)
+"%PY_MANUAL%" -c "import sys; sys.exit(0 if sys.version_info <= (3, 12, 99) else 1)" >nul 2>nul
+if %errorlevel% equ 0 (
+    set "PYTHON_CMD=%PY_MANUAL%"
+    goto :CREATE_VENV
+) else (
+    echo [오류] 알맞은 버전의 파이썬을 찾을 수 없습니다. 다시 입력해 주세요.
+    goto :MANUAL_PY_PROMPT
+)
 
 :CREATE_VENV
 echo [탐색 완료] 선택된 파이썬 실행 파일: %PYTHON_CMD%
-echo [2/4] 가상환경(venv)을 생성합니다. 시간이 조금 걸릴 수 있습니다...
+echo [2/4] 가상환경(venv)을 생성합니다.
+echo 시간이 조금 걸릴 수 있습니다...
 %PYTHON_CMD% -m venv venv
 
-:: 가상환경 활성화 및 pip 최신화
 call venv\Scripts\activate
 python -m pip install --upgrade pip > nul
 
@@ -81,7 +92,7 @@ if "%USER_CHOICE%"=="1" (
     goto :INSTALL_REMAINING
 )
 if "%USER_CHOICE%"=="2" (
-    echo [3/4] PyTorch GPU ^(CUDA 12.1^) 버전을 설치합니다... 용량이 크니 잠시만 기다려주세요.
+    echo [3/4] PyTorch GPU ^(CUDA 12.1^) 버전을 설치합니다...
     pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
     goto :INSTALL_REMAINING
 )
@@ -95,10 +106,16 @@ pip install -r requirements.txt
 echo 모든 환경 설정 및 설치가 완료되었습니다!
 goto :START_INTERFACE
 
-:RUN_APP
+:CHECK_UPDATE
 call venv\Scripts\activate
+echo [시스템 점검] 신규 패키지 업데이트 내역을 확인합니다...
+python -c "import faster_whisper" >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [업데이트] faster-whisper 등 최적화 패키지가 누락되어 설치를 진행합니다...
+    pip install -r requirements.txt
+)
 
 :START_INTERFACE
-echo [4/4] 웹 UI를 시작합니다! 브라우저 창이 열릴 때까지 기다려주세요.
-python app.py
+echo [4/4] 데스크톱 GUI 애플리케이션을 시작합니다!
+python main.py
 pause
